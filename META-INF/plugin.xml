@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!--
+  ~ Copyright 2014 the original author or authors.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE idea-plugin PUBLIC
+        "Plugin/DTD" "http://plugins.intellij.net/plugin.dtd">
+<idea-plugin version="2" url="https://github.com/aweigold/idea-plugin-jibx">
+  <id>com.adamweigold.idea-plugin-jibx</id>
+  <name>JiBX Idea Plugin</name>
+  <version>0.1</version>
+  <vendor email="adam@adamweigold.com" url="http://www.adamweigold.com/">Adam J. Weigold</vendor>
+
+  <description><![CDATA[
+      <p>
+        Provides <b>JiBX Binding</b> support for Java language<br/>
+      </p>
+      <p>
+        To configure version 0.1, you must place all your jibx bindings in a folder called "jibx" in your module's root.
+        Files that are not jibx bindings can not exist in this directory.  You must also have jibx configured as a
+        dependency of your module, as it will be used for the actual compilation (not the version included with this plugin).<br/>
+      </p>
+      <p>
+        Please contact me via e-mail or github for questions, feature requests, bugs, etc.<br/>
+      </p>
+      <p>
+        Future releases will include:
+        <ul>
+            <li>Configuration of compilation verbosity logging</li>
+            <li>Configurable (or scannable) jibx binding file location</li>
+            <li>Integration of other JiBX 'extras' in the IDE</li>
+            <li>Integration of JiBX validation with Idea's validation</li>
+            <li>Unit tests for plugin's build</li>
+            <li>Want others?  Send requests.</li>
+        </ul>
+      </p>
+    ]]></description>
+
+  <change-notes><![CDATA[
+      <b>0.1</b><br>
+      <ul>
+        <li>Integrated JiBX compilation into Idea's JPS External Make system</li>
+        <li>Added detection of files with .jibx extension as XML files</li>
+      </ul>
+    ]]>
+  </change-notes>
+
+  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
+  <idea-version since-build="131"/>
+
+  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+       on how to target different products -->
+  <!-- uncomment to enable plugin in all products
+  <depends>com.intellij.modules.lang</depends>
+  -->
+  <extensions defaultExtensionNs="com.intellij">
+    <compileServer.plugin classpath="idea-plugin-jibx-jps-plugin.jar;bcel.jar;jibx-bind.jar;jibx-extras.jar;jibx-run.jar;stax-api.jar;wstx-asl.jar;xpp3.jar"/>
+    <fileTemplateGroup implementation="com.adamweigold.jibx.file.JibxFileTemplateProvider"/>
+    <fileTypeFactory implementation="com.adamweigold.jibx.file.JibxFileTypeFactory"/>
+    <syntaxHighlighter key="JiBX" implementationClass="com.intellij.ide.highlighter.XmlFileHighlighter"/>
+  </extensions>
+
+  <application-components>
+    <!-- Add your application components here -->
+  </application-components>
+
+  <project-components>
+    <!-- Add your project components here -->
+  </project-components>
+
+  <actions>
+    <!-- Add your actions here -->
+  </actions>
+
+</idea-plugin>
