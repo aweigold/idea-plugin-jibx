@@ -25,6 +25,7 @@ Future releases will include:
 **0.2**
 * Upgraded BCEL to support Java 8
 * Updated compiler error logging to include entire JiBXException stacktrace instead of just the message
+
 **0.1**
 * Integrated JiBX compilation into Idea's JPS External Make system
 * Added detection of files with .jibx extension as XML files
