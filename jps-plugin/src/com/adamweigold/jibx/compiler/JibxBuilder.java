@@ -32,6 +32,8 @@ import org.jibx.runtime.JiBXException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 
 /**
@@ -69,7 +71,10 @@ public class JibxBuilder extends ModuleLevelBuilder {
             compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Starting JiBX Bindings..."));
             jibxCompiler.compile(classPathArray, bindingFileList);
         } catch (JiBXException e) {
-            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.ERROR, e.getMessage()));
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.ERROR, sw.toString()));
             return ExitCode.ABORT;
         }
         return ExitCode.OK;

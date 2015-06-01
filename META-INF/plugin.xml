@@ -20,7 +20,7 @@
 <idea-plugin version="2" url="https://github.com/aweigold/idea-plugin-jibx">
   <id>com.adamweigold.idea-plugin-jibx</id>
   <name>JiBX Idea Plugin</name>
-  <version>0.1</version>
+  <version>0.2</version>
   <vendor email="adam@adamweigold.com" url="http://www.adamweigold.com/">Adam J. Weigold</vendor>
 
   <description><![CDATA[
@@ -28,7 +28,7 @@
         Provides <b>JiBX Binding</b> support for Java language<br/>
       </p>
       <p>
-        To configure version 0.1, you must place all your jibx bindings in a folder called "jibx" in your module's root.
+        To configure version 0.2, you must place all your jibx bindings in a folder called "jibx" in your module's root.
         Files that are not jibx bindings can not exist in this directory.  You must also have jibx configured as a
         dependency of your module, as it will be used for the actual compilation (not the version included with this plugin).<br/>
       </p>
@@ -49,6 +49,11 @@
     ]]></description>
 
   <change-notes><![CDATA[
+      <b>0.2</b><br>
+      <ul>
+        <li>Upgraded BCEL to support Java 8</li>
+        <li>Updated compiler error logging to include entire JiBXException stacktrace instead of just the message</li>
+      </ul>
       <b>0.1</b><br>
       <ul>
         <li>Integrated JiBX compilation into Idea's JPS External Make system</li>
