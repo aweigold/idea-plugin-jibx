@@ -34,6 +34,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 
 /**
@@ -56,19 +58,24 @@ public class JibxBuilder extends ModuleLevelBuilder {
         if (compileDir == null){
             return ExitCode.NOTHING_DONE;
         }
+
         String compileOutput = compileDir.getAbsolutePath();
         String[] classPathArray = getClassPathArray(compileOutput, moduleChunk);
-        //List<String> classPathList = Arrays.asList(Utility.getClassPaths());
-        //classPathList.add(compileOutput);
-        //String[] classPathArray = new String[]{compileOutput, "."}; //classPathList.toArray(new String[classPathList.size()]);
+
+        Map<String, CompiledClass> compiledClasses = outputConsumer.getCompiledClasses();
+        if (compiledClasses.isEmpty()) {
+            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Nothing compiled yet, exiting"));
+            return ExitCode.NOTHING_DONE;
+        }
 
         String[] bindingFileList = getBindingFileList(moduleChunk);
-        if (bindingFileList == null || bindingFileList.length == 0){
+        if (bindingFileList.length == 0){
             return ExitCode.NOTHING_DONE;
         }
         Compile jibxCompiler = getCompilerFromSettings(jibxSettings);
         try {
             compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Starting JiBX Bindings..."));
+
             jibxCompiler.compile(classPathArray, bindingFileList);
         } catch (JiBXException e) {
             StringWriter sw = new StringWriter();
@@ -80,21 +87,31 @@ public class JibxBuilder extends ModuleLevelBuilder {
         return ExitCode.OK;
     }
 
+    private Collection<File> getClassPath(ModuleChunk moduleChunk) {
+        Collection<File> classpath = new HashSet<File>();
+
+        classpath.addAll(ProjectPaths.getCompilationClasspathFiles(moduleChunk, false, false, false));
+
+        // Add the current classpath to get the compiler jars
+        for (URL u : ((URLClassLoader)this.getClass().getClassLoader()).getURLs()) {
+            classpath.add(new File(u.getFile()));
+        }
+
+        return classpath;
+    }
+
     private String[] getClassPathArray(String compileOutput, ModuleChunk moduleChunk) {
         HashSet<String> classPathSet = new HashSet<String>();
         classPathSet.add(compileOutput);
-        Collection<File> compilationClasspathFiles = ProjectPaths.getCompilationClasspathFiles(moduleChunk, false, false, false);
-        for (File classPathFile : compilationClasspathFiles){
+        for (File classPathFile : getClassPath(moduleChunk)){
             classPathSet.add(classPathFile.getAbsolutePath());
         }
         return classPathSet.toArray(new String[classPathSet.size()]);
     }
 
     private Compile getCompilerFromSettings(final JibxSettings settings) {
-        Compile compiler =
-                new Compile();
                 //new Compile(verbose1, verbose2, load, verify, track, over);
-        return compiler;
+        return new Compile();
     }
 
     private String[] getBindingFileList(final ModuleChunk moduleChunk) {
@@ -104,8 +121,11 @@ public class JibxBuilder extends ModuleLevelBuilder {
                 File root = JpsPathUtil.urlToFile(rootUrl);
                 File jibxRoot = new File(root, "jibx");
                 if (jibxRoot.exists() && jibxRoot.isDirectory()){
-                    for (File binding : jibxRoot.listFiles()){
-                        bindings.add(binding.getAbsolutePath());
+                    File[] files = jibxRoot.listFiles();
+                    if (files != null) {
+                        for (File binding : files) {
+                            bindings.add(binding.getAbsolutePath());
+                        }
                     }
                 }
             }
@@ -123,4 +143,5 @@ public class JibxBuilder extends ModuleLevelBuilder {
     public String getPresentableName() {
         return "Jibx Compiler";
     }
+
 }
