@@ -20,7 +20,7 @@
 <idea-plugin version="2" url="https://github.com/aweigold/idea-plugin-jibx">
   <id>com.adamweigold.idea-plugin-jibx</id>
   <name>JiBX Idea Plugin</name>
-  <version>0.2</version>
+  <version>0.2.1</version>
   <vendor email="adam@adamweigold.com" url="http://www.adamweigold.com/">Adam J. Weigold</vendor>
 
   <description><![CDATA[
