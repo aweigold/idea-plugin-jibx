@@ -20,7 +20,7 @@
 <idea-plugin version="2" url="https://github.com/aweigold/idea-plugin-jibx">
   <id>com.adamweigold.idea-plugin-jibx</id>
   <name>JiBX Idea Plugin</name>
-  <version>0.2</version>
+  <version>0.2.1</version>
   <vendor email="adam@adamweigold.com" url="http://www.adamweigold.com/">Adam J. Weigold</vendor>
 
   <description><![CDATA[
@@ -70,8 +70,9 @@
   <!-- uncomment to enable plugin in all products
   <depends>com.intellij.modules.lang</depends>
   -->
+
   <extensions defaultExtensionNs="com.intellij">
-    <compileServer.plugin classpath="idea-plugin-jibx-jps-plugin.jar;bcel.jar;jibx-bind.jar;jibx-extras.jar;jibx-run.jar;stax-api.jar;wstx-asl.jar;xpp3.jar"/>
+    <compileServer.plugin classpath="idea-plugin-jibx-jps-plugin.jar;bcel-6.1.jar;jibx-bind-1.3.1.jar;jibx-extras-1.3.1.jar;jibx-run-1.3.1.jar;xpp3-1.1.3.4.O.jar"/>
     <fileTemplateGroup implementation="com.adamweigold.jibx.file.JibxFileTemplateProvider"/>
     <fileTypeFactory implementation="com.adamweigold.jibx.file.JibxFileTypeFactory"/>
     <syntaxHighlighter key="JiBX" implementationClass="com.intellij.ide.highlighter.XmlFileHighlighter"/>
