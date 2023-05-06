@@ -18,6 +18,15 @@ package com.adamweigold.jibx.compiler;
 
 import com.adamweigold.jibx.settings.JibxSettings;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.jps.ModuleChunk;
 import org.jetbrains.jps.ProjectPaths;
@@ -31,13 +40,16 @@ import org.jetbrains.jps.util.JpsPathUtil;
 import org.jibx.binding.Compile;
 import org.jibx.runtime.JiBXException;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author Adam J. Weigold <adam@adamweigold.com>
@@ -48,7 +60,6 @@ public class JibxBuilder extends ModuleLevelBuilder {
 
     public JibxBuilder() {
         super(BuilderCategory.CLASS_POST_PROCESSOR);
-        logger.info("Jibx Module Builder created");
     }
 
     @Override
@@ -56,7 +67,6 @@ public class JibxBuilder extends ModuleLevelBuilder {
                           ModuleChunk moduleChunk,
                           DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget> dirtyFilesHolder,
                           OutputConsumer outputConsumer) throws ProjectBuildException, IOException {
-        logger.info("Jibx Module Builder build method called");
         JibxSettings jibxSettings = JibxSettings.getSettings(compileContext.getProjectDescriptor().getProject());
         ModuleBuildTarget moduleBuildTarget = moduleChunk.representativeTarget();
         File compileDir = moduleBuildTarget.getOutputDir();
@@ -64,8 +74,6 @@ public class JibxBuilder extends ModuleLevelBuilder {
             return ExitCode.NOTHING_DONE;
         }
 
-        String compileOutput = compileDir.getAbsolutePath();
-        String[] classPathArray = getClassPathArray(compileOutput, moduleChunk);
 
         Map<String, CompiledClass> compiledClasses = outputConsumer.getCompiledClasses();
         if (compiledClasses.isEmpty()) {
@@ -77,11 +85,16 @@ public class JibxBuilder extends ModuleLevelBuilder {
         if (bindingFileList.length == 0) {
             return ExitCode.NOTHING_DONE;
         }
+        logger.info("Found binding files: " + Arrays.toString(bindingFileList));
+
+
+        String compileOutput = compileDir.getAbsolutePath();
+        String[] classPathArray = getClassPathArray(compileOutput, moduleChunk);
         Compile jibxCompiler = getCompilerFromSettings(jibxSettings);
         try {
-            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Starting JiBX Bindings..."));
-
+            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Starting JiBX Bindings" + Arrays.toString(bindingFileList) + "..."));
             jibxCompiler.compile(classPathArray, bindingFileList);
+            compileContext.processMessage(new CompilerMessage(getPresentableName(), BuildMessage.Kind.INFO, "Finished JiBX Bindings"));
         } catch (JiBXException e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -111,7 +124,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
         for (File classPathFile : getClassPath(moduleChunk)) {
             classPathSet.add(classPathFile.getAbsolutePath());
         }
-        return classPathSet.toArray(new String[classPathSet.size()]);
+        return classPathSet.toArray(new String[0]);
     }
 
     private Compile getCompilerFromSettings(final JibxSettings settings) {
@@ -120,24 +133,77 @@ public class JibxBuilder extends ModuleLevelBuilder {
     }
 
     private String[] getBindingFileList(final ModuleChunk moduleChunk) {
-        HashSet<String> bindings = new HashSet<String>();
+        Set<String> bindings = new HashSet<>();
         for (JpsModule module : moduleChunk.getModules()) {
             for (String rootUrl : module.getContentRootsList().getUrls()) {
-                File root = JpsPathUtil.urlToFile(rootUrl);
-                File jibxRoot = new File(root, "jibx");
-                if (jibxRoot.exists() && jibxRoot.isDirectory()) {
-                    File[] files = jibxRoot.listFiles();
-                    if (files != null) {
-                        for (File binding : files) {
-                            bindings.add(binding.getAbsolutePath());
-                        }
-                    }
+                try {
+                    File root = JpsPathUtil.urlToFile(rootUrl);
+                    Path moduleFolderPath = root.toPath();
+                    checkForBindingsInJibxFolder(bindings, moduleFolderPath);
+                    checkForBindingsInPom(bindings, moduleFolderPath);
+                } catch (IOException | XmlPullParserException ex) {
+                    ex.printStackTrace();
+                    throw new IllegalStateException(ex);
                 }
             }
         }
-        return bindings.toArray(new String[bindings.size()]);
+        return bindings.toArray(new String[0]);
     }
 
+    private static void checkForBindingsInPom(Set<String> bindings, Path path) throws IOException, XmlPullParserException {
+        Path pom = path.resolve("pom.xml");
+        if(Files.exists(pom)){
+            logger.info("Found pom.xml, checking for information about jibx binding files...");
+            MavenXpp3Reader reader = new MavenXpp3Reader();
+            Model model = reader.read(Files.newBufferedReader(pom));
+            Build build = model.getBuild();
+            if (build != null) {
+                logger.info("Searching for jibx plugin in pom...");
+                Plugin plugin = build.getPluginsAsMap().get("org.jibx:jibx-maven-plugin");
+                Optional<PluginExecution> pluginExecution = plugin.getExecutions().stream()
+                        .filter(execution -> execution.getGoals().contains("bind"))
+                        .findFirst();
+                if (pluginExecution.isPresent()) {
+                    PluginExecution bindPluginExecution = pluginExecution.get();
+                    Xpp3Dom configuration = (Xpp3Dom) bindPluginExecution.getConfiguration();
+                    Xpp3Dom schemaBindingDirectory = configuration.getChild("schemaBindingDirectory");
+                    String schemaBindingDirectoryValue = schemaBindingDirectory.getValue();
+                    logger.info("Checking binding directory...");
+                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.basedir}","");
+                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.build.directory}","target");
+                    logger.info("Searching for binding files in directory " + schemaBindingDirectoryValue);
+                    Path schemaBindingDirectoryPath = path.resolve(schemaBindingDirectoryValue);
+                    addFilesInDirectoryToBindings(bindings, schemaBindingDirectoryPath);
+                }
+            }
+        }
+    }
+
+    private static void checkForBindingsInJibxFolder(Set<String> bindings, Path path) {
+        Path jibx = path.resolve("jibx");
+        if (Files.exists(jibx)) {
+            logger.info("Found jibx folder, adding binding files...");
+            addFilesInDirectoryToBindings(bindings, jibx);
+        }
+    }
+
+    private static void addFilesInDirectoryToBindings(Set<String> bindings, Path dir) {
+        if (Files.exists(dir) && Files.isDirectory(dir)) {
+            try(Stream<Path> list = Files.list(dir)){
+                list
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.getFileName().toString().endsWith(".xml"))
+                        .map(Path::toAbsolutePath)
+                        .map(Path::toString)
+                        .forEach(bindings::add);
+            }catch(IOException ex){
+                ex.printStackTrace();
+                throw new IllegalStateException(ex);
+            }
+        }
+    }
+
+    @NotNull
     @Override
     public List<String> getCompilableFileExtensions() {
         return Arrays.asList("java", "jibx");

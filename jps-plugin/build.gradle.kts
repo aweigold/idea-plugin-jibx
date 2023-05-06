@@ -19,6 +19,7 @@ repositories {
 
 dependencies {
     implementation("org.jibx:jibx-bind:1.4.2")
+    implementation("org.apache.maven:maven-model:3.9.1")
 }
 
 tasks.jar {
