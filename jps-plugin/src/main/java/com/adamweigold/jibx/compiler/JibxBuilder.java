@@ -17,6 +17,7 @@
 package com.adamweigold.jibx.compiler;
 
 import com.adamweigold.jibx.settings.JibxSettings;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.jps.ModuleChunk;
 import org.jetbrains.jps.ProjectPaths;
@@ -43,8 +44,11 @@ import java.util.*;
  */
 public class JibxBuilder extends ModuleLevelBuilder {
 
+    private static final Logger logger = Logger.getInstance(JibxBuilder.class);
+
     public JibxBuilder() {
         super(BuilderCategory.CLASS_POST_PROCESSOR);
+        logger.info("Jibx Module Builder created");
     }
 
     @Override
@@ -52,10 +56,11 @@ public class JibxBuilder extends ModuleLevelBuilder {
                           ModuleChunk moduleChunk,
                           DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget> dirtyFilesHolder,
                           OutputConsumer outputConsumer) throws ProjectBuildException, IOException {
+        logger.info("Jibx Module Builder build method called");
         JibxSettings jibxSettings = JibxSettings.getSettings(compileContext.getProjectDescriptor().getProject());
         ModuleBuildTarget moduleBuildTarget = moduleChunk.representativeTarget();
         File compileDir = moduleBuildTarget.getOutputDir();
-        if (compileDir == null){
+        if (compileDir == null) {
             return ExitCode.NOTHING_DONE;
         }
 
@@ -69,7 +74,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
         }
 
         String[] bindingFileList = getBindingFileList(moduleChunk);
-        if (bindingFileList.length == 0){
+        if (bindingFileList.length == 0) {
             return ExitCode.NOTHING_DONE;
         }
         Compile jibxCompiler = getCompilerFromSettings(jibxSettings);
@@ -93,7 +98,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
         classpath.addAll(ProjectPaths.getCompilationClasspathFiles(moduleChunk, false, false, false));
 
         // Add the current classpath to get the compiler jars
-        for (URL u : ((URLClassLoader)this.getClass().getClassLoader()).getURLs()) {
+        for (URL u : ((URLClassLoader) this.getClass().getClassLoader()).getURLs()) {
             classpath.add(new File(u.getFile()));
         }
 
@@ -103,24 +108,24 @@ public class JibxBuilder extends ModuleLevelBuilder {
     private String[] getClassPathArray(String compileOutput, ModuleChunk moduleChunk) {
         HashSet<String> classPathSet = new HashSet<String>();
         classPathSet.add(compileOutput);
-        for (File classPathFile : getClassPath(moduleChunk)){
+        for (File classPathFile : getClassPath(moduleChunk)) {
             classPathSet.add(classPathFile.getAbsolutePath());
         }
         return classPathSet.toArray(new String[classPathSet.size()]);
     }
 
     private Compile getCompilerFromSettings(final JibxSettings settings) {
-                //new Compile(verbose1, verbose2, load, verify, track, over);
+        //new Compile(verbose1, verbose2, load, verify, track, over);
         return new Compile();
     }
 
     private String[] getBindingFileList(final ModuleChunk moduleChunk) {
         HashSet<String> bindings = new HashSet<String>();
-        for (JpsModule module : moduleChunk.getModules()){
-            for (String rootUrl : module.getContentRootsList().getUrls()){
+        for (JpsModule module : moduleChunk.getModules()) {
+            for (String rootUrl : module.getContentRootsList().getUrls()) {
                 File root = JpsPathUtil.urlToFile(rootUrl);
                 File jibxRoot = new File(root, "jibx");
-                if (jibxRoot.exists() && jibxRoot.isDirectory()){
+                if (jibxRoot.exists() && jibxRoot.isDirectory()) {
                     File[] files = jibxRoot.listFiles();
                     if (files != null) {
                         for (File binding : files) {

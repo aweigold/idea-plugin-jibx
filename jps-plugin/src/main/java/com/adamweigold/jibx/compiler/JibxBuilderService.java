@@ -16,6 +16,7 @@
 
 package com.adamweigold.jibx.compiler;
 
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.jps.incremental.BuilderService;
 import org.jetbrains.jps.incremental.ModuleLevelBuilder;
@@ -28,9 +29,12 @@ import java.util.List;
  */
 public class JibxBuilderService extends BuilderService {
 
+    private static final Logger logger = Logger.getInstance(JibxBuilderService.class);
+
     @NotNull
     @Override
     public List<? extends ModuleLevelBuilder> createModuleLevelBuilders() {
+        logger.info("Jibx Module Builder Service created");
         return Arrays.asList(new JibxBuilder());
     }
 }

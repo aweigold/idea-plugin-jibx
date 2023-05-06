@@ -1,0 +1,53 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+  <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+  <id>com.adamweigold.jibx.idea-plugin-jibx</id>
+
+  <!-- Public plugin name should be written in Title Case.
+       Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+  <name>Idea-plugin-jibx</name>
+
+  <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+  <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+
+  <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+       Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+       Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+  <description><![CDATA[
+      <p>
+        Provides <b>JiBX Binding</b> support for Java language<br/>
+      </p>
+      <p>
+        To configure version 0.2, you must place all your jibx bindings in a folder called "jibx" in your module's root.
+        Files that are not jibx bindings can not exist in this directory.  You must also have jibx configured as a
+        dependency of your module, as it will be used for the actual compilation (not the version included with this plugin).<br/>
+      </p>
+      <p>
+        Please contact me via e-mail or github for questions, feature requests, bugs, etc.<br/>
+      </p>
+      <p>
+        Future releases will include:
+        <ul>
+            <li>Configuration of compilation verbosity logging</li>
+            <li>Configurable (or scannable) jibx binding file location</li>
+            <li>Integration of other JiBX 'extras' in the IDE</li>
+            <li>Integration of JiBX validation with Idea's validation</li>
+            <li>Unit tests for plugin's build</li>
+            <li>Want others?  Send requests.</li>
+        </ul>
+      </p>
+    ]]></description>
+
+  <!-- Product and plugin compatibility requirements.
+       Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+  <depends>com.intellij.modules.platform</depends>
+
+  <!-- Extension points defined by the plugin.
+       Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+  <extensions defaultExtensionNs="com.intellij">
+    <compileServer.plugin classpath="jps-plugin-1.0-SNAPSHOT.jar" />
+    <fileTemplateGroup implementation="com.adamweigold.jibx.file.JibxFileTemplateProvider"/>
+    <fileTypeFactory implementation="com.adamweigold.jibx.file.JibxFileTypeFactory"/>
+    <syntaxHighlighter key="JiBX" implementationClass="com.intellij.ide.highlighter.XmlFileHighlighter"/>
+  </extensions>
+</idea-plugin>

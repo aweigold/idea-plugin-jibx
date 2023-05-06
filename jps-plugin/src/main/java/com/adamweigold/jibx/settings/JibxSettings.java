@@ -29,14 +29,15 @@ public class JibxSettings extends JpsElementBase<JibxSettings> {
 
     static final JpsElementChildRole<JibxSettings> ROLE = JpsElementChildRoleBase.create("Jibx Compiler Configuration");
 
-    public JibxSettings(){}
+    public JibxSettings() {
+    }
 
     public JibxSettings(JibxSettings original) {
 
     }
 
     @NotNull
-    public static JibxSettings getSettings(@NotNull JpsProject project){
+    public static JibxSettings getSettings(@NotNull JpsProject project) {
         JibxSettings settings = project.getContainer().getChild(ROLE);
         return settings == null ? new JibxSettings() : settings;
     }
