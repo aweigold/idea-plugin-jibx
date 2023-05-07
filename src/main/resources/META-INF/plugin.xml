@@ -45,7 +45,7 @@
   <!-- Extension points defined by the plugin.
        Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
   <extensions defaultExtensionNs="com.intellij">
-    <compileServer.plugin classpath="jps-plugin-1.0-SNAPSHOT.jar" />
+    <compileServer.plugin classpath="jps-plugin.jar" />
     <fileTemplateGroup implementation="com.adamweigold.jibx.file.JibxFileTemplateProvider"/>
     <fileTypeFactory implementation="com.adamweigold.jibx.file.JibxFileTypeFactory"/>
     <syntaxHighlighter key="JiBX" implementationClass="com.intellij.ide.highlighter.XmlFileHighlighter"/>

@@ -24,6 +24,6 @@ import javax.swing.*;
  * @author Adam J. Weigold <adam@adamweigold.com>
  */
 public interface JibxIcons {
-    Icon JIBX_64 = IconLoader.getIcon("/com/adamweigold/jibx/icons/jibx_med_64.png");
-    Icon JIBX_16 = IconLoader.getIcon("/com/adamweigold/jibx/icons/jibx_med_16.png");
+    Icon JIBX_64 = IconLoader.getIcon("/com/adamweigold/jibx/icons/jibx_med_64.png", ClassLoader.getSystemClassLoader());
+    Icon JIBX_16 = IconLoader.getIcon("/com/adamweigold/jibx/icons/jibx_med_16.png", ClassLoader.getSystemClassLoader());
 }

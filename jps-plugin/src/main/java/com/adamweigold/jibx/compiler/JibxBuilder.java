@@ -18,8 +18,6 @@ package com.adamweigold.jibx.compiler;
 
 import com.adamweigold.jibx.settings.JibxSettings;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiManager;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -40,14 +38,14 @@ import org.jetbrains.jps.util.JpsPathUtil;
 import org.jibx.binding.Compile;
 import org.jibx.runtime.JiBXException;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -106,9 +104,8 @@ public class JibxBuilder extends ModuleLevelBuilder {
     }
 
     private Collection<File> getClassPath(ModuleChunk moduleChunk) {
-        Collection<File> classpath = new HashSet<File>();
 
-        classpath.addAll(ProjectPaths.getCompilationClasspathFiles(moduleChunk, false, false, false));
+        Collection<File> classpath = new HashSet<>(ProjectPaths.getCompilationClasspathFiles(moduleChunk, false, false, false));
 
         // Add the current classpath to get the compiler jars
         for (URL u : ((URLClassLoader) this.getClass().getClassLoader()).getURLs()) {
@@ -119,7 +116,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
     }
 
     private String[] getClassPathArray(String compileOutput, ModuleChunk moduleChunk) {
-        HashSet<String> classPathSet = new HashSet<String>();
+        Set<String> classPathSet = new HashSet<>();
         classPathSet.add(compileOutput);
         for (File classPathFile : getClassPath(moduleChunk)) {
             classPathSet.add(classPathFile.getAbsolutePath());
@@ -132,7 +129,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
         return new Compile();
     }
 
-    private String[] getBindingFileList(final ModuleChunk moduleChunk) {
+    private String[] getBindingFileList(final ModuleChunk moduleChunk) throws IOException {
         Set<String> bindings = new HashSet<>();
         for (JpsModule module : moduleChunk.getModules()) {
             for (String rootUrl : module.getContentRootsList().getUrls()) {
@@ -141,7 +138,7 @@ public class JibxBuilder extends ModuleLevelBuilder {
                     Path moduleFolderPath = root.toPath();
                     checkForBindingsInJibxFolder(bindings, moduleFolderPath);
                     checkForBindingsInPom(bindings, moduleFolderPath);
-                } catch (IOException | XmlPullParserException ex) {
+                } catch (XmlPullParserException ex) {
                     ex.printStackTrace();
                     throw new IllegalStateException(ex);
                 }
@@ -150,9 +147,10 @@ public class JibxBuilder extends ModuleLevelBuilder {
         return bindings.toArray(new String[0]);
     }
 
-    private static void checkForBindingsInPom(Set<String> bindings, Path path) throws IOException, XmlPullParserException {
+    // Visible for test
+    static void checkForBindingsInPom(Set<String> bindings, Path path) throws IOException, XmlPullParserException {
         Path pom = path.resolve("pom.xml");
-        if(Files.exists(pom)){
+        if (Files.exists(pom)) {
             logger.info("Found pom.xml, checking for information about jibx binding files...");
             MavenXpp3Reader reader = new MavenXpp3Reader();
             Model model = reader.read(Files.newBufferedReader(pom));
@@ -160,23 +158,44 @@ public class JibxBuilder extends ModuleLevelBuilder {
             if (build != null) {
                 logger.info("Searching for jibx plugin in pom...");
                 Plugin plugin = build.getPluginsAsMap().get("org.jibx:jibx-maven-plugin");
-                Optional<PluginExecution> pluginExecution = plugin.getExecutions().stream()
-                        .filter(execution -> execution.getGoals().contains("bind"))
-                        .findFirst();
-                if (pluginExecution.isPresent()) {
-                    PluginExecution bindPluginExecution = pluginExecution.get();
-                    Xpp3Dom configuration = (Xpp3Dom) bindPluginExecution.getConfiguration();
-                    Xpp3Dom schemaBindingDirectory = configuration.getChild("schemaBindingDirectory");
-                    String schemaBindingDirectoryValue = schemaBindingDirectory.getValue();
-                    logger.info("Checking binding directory...");
-                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.basedir}","");
-                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.build.directory}","target");
-                    logger.info("Searching for binding files in directory " + schemaBindingDirectoryValue);
-                    Path schemaBindingDirectoryPath = path.resolve(schemaBindingDirectoryValue);
-                    addFilesInDirectoryToBindings(bindings, schemaBindingDirectoryPath);
+                if(plugin!=null){
+                    Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
+                    String schemaBindingDirectoryValue = getSchemaBindingDirectoryFromConfiguration(configuration);
+                    Optional<PluginExecution> pluginExecution = plugin.getExecutions().stream()
+                            .filter(execution -> execution.getGoals().contains("bind"))
+                            .findFirst();
+                    if (pluginExecution.isPresent()) {
+                        PluginExecution bindPluginExecution = pluginExecution.get();
+                        configuration = (Xpp3Dom) bindPluginExecution.getConfiguration();
+                        String schemaBindingDirectoryFromConfigurationFromPluginExecution = getSchemaBindingDirectoryFromConfiguration(configuration);
+                        if (schemaBindingDirectoryFromConfigurationFromPluginExecution != null) {
+                            schemaBindingDirectoryValue = schemaBindingDirectoryFromConfigurationFromPluginExecution;
+                        }
+
+                    }
+                    if (schemaBindingDirectoryValue != null) {
+                        logger.info("Searching for binding files in directory " + schemaBindingDirectoryValue);
+                        Path schemaBindingDirectoryPath = path.resolve(schemaBindingDirectoryValue);
+                        addFilesInDirectoryToBindings(bindings, schemaBindingDirectoryPath);
+                    }
                 }
             }
         }
+    }
+
+    private static String getSchemaBindingDirectoryFromConfiguration(Xpp3Dom configuration) {
+        if (configuration != null) {
+            Xpp3Dom schemaBindingDirectory = configuration.getChild("schemaBindingDirectory");
+            if (schemaBindingDirectory != null) {
+                String schemaBindingDirectoryValue = schemaBindingDirectory.getValue();
+                if (schemaBindingDirectoryValue != null) {
+                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.basedir}", "");
+                    schemaBindingDirectoryValue = schemaBindingDirectoryValue.replace("${project.build.directory}", "target");
+                    return schemaBindingDirectoryValue;
+                }
+            }
+        }
+        return null;
     }
 
     private static void checkForBindingsInJibxFolder(Set<String> bindings, Path path) {
@@ -189,14 +208,14 @@ public class JibxBuilder extends ModuleLevelBuilder {
 
     private static void addFilesInDirectoryToBindings(Set<String> bindings, Path dir) {
         if (Files.exists(dir) && Files.isDirectory(dir)) {
-            try(Stream<Path> list = Files.list(dir)){
+            try (Stream<Path> list = Files.list(dir)) {
                 list
                         .filter(Files::isRegularFile)
                         .filter(p -> p.getFileName().toString().endsWith(".xml"))
                         .map(Path::toAbsolutePath)
                         .map(Path::toString)
                         .forEach(bindings::add);
-            }catch(IOException ex){
+            } catch (IOException ex) {
                 ex.printStackTrace();
                 throw new IllegalStateException(ex);
             }
