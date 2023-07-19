@@ -1,7 +1,9 @@
 idea-plugin-jibx
 ================
 
-# JiBX plugin for JetBrains Idea.
+## JiBX plugin for JetBrains Idea.
+
+:warning: **This plugin is no longer actively maintained.** :warning:
 
 ## Description
 Provides **JiBX Binding** support for Java language
@@ -22,6 +24,10 @@ Future releases will include:
 * Want others?  Send requests.
 
 ## Changelog
+**0.3**
+* Integrated [updates from community](https://github.com/aweigold/idea-plugin-jibx/pull/3)
+** Thanks to [P3l14](https://github.com/P3l14) for the contribution!
+
 **0.2**
 * Upgraded BCEL to support Java 8
 * Updated compiler error logging to include entire JiBXException stacktrace instead of just the message

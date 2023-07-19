@@ -1,14 +1,14 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
   <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-  <id>com.adamweigold.jibx.idea-plugin-jibx</id>
+  <id>com.adamweigold.idea-plugin-jibx</id>
 
   <!-- Public plugin name should be written in Title Case.
        Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-  <name>Idea-plugin-jibx</name>
+  <name>JiBX Build Integration</name>
 
   <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-  <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+  <vendor email="adam@adamweigold.com" url="https://www.adamweigold.com">Adam J. Weigold</vendor>
 
   <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
        Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
@@ -16,6 +16,9 @@
   <description><![CDATA[
       <p>
         Provides <b>JiBX Binding</b> support for Java language<br/>
+      </p>
+      <p>
+        <b>NOTE!</b>  This plugin is no longer actively maintained.  If you need an update, submit a pull request and I will review it.
       </p>
       <p>
         To configure version 0.2, you must place all your jibx bindings in a folder called "jibx" in your module's root.
